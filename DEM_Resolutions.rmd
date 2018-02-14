@@ -1,5 +1,5 @@
 ---
-title: "How does changing the resolution of environmental rasters affect modelling mean tempeature with elevation?"
+title: "How does changing the resolution of environmental rasters affect modelling mean tempeature?"
 output: html_notebook
 ---
 
@@ -39,15 +39,35 @@ for(i in seq_along(raster_names)){
 
 
 ```{r}
+# Fix memory issue....(from stackoverflow)
+tmpdir_name <- paste(c("D", ":/RASTER_TEMP/"), collapse='')
+if(file.exists(tmpdir_name) == FALSE){
+    dir.create(tmpdir_name)
+}
+
+rasterOptions(datatype = "FLT4S", 
+    progress = "text", 
+    tmpdir = tmpdir_name, 
+    tmptime = 4, 
+    timer = TRUE,
+    tolerance = 0.5,
+    chunksize = 1e+08,
+    maxmemory = 1e+09)
+```
+
+
+
+```{r}
 coordinates(stations) = ~ EASTING + NORTHING  # coerce to SpatialPointsDataFrame
 
- resolutions <- c(20)
+# Resolution (in metres) to 
+ resolutions <- c(200, 400, 1000)
 for(raster in rasters){
   par(mfrow = c(2,3))      # resolutions to resample DEM
   for(i in seq_along(resolutions)){
     template_tmp <- raster(ext = extent(rasters[[1]]),   
                            resolution = resolutions[[i]])
-    #resample_tmp <- resample(raster, template_tmp, method = "bilinear") # resample
+    resample_tmp <- resample(raster, template_tmp, method = "bilinear") # resample
     stations$ext <- extract(resample_tmp,       
                             stations) 
     
@@ -56,6 +76,8 @@ for(raster in rasters){
     
     plot(resample_tmp, main = str_c(names(raster)," at ",resolutions[[i]]," m resolution"))
     points(stations)
+    
+    gc() #garbage collect
   }
 }
 
