@@ -327,8 +327,9 @@ head(stations)                                 # print head of tibble</code></pr
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxucnNxIDwtIGxpc3QoKSAgICAgICAgICAgICAgICAgICAgXG5mb3IoayBpbiAxOjEpeyAgICAgICAgICAgICAgICAgICAgICAgICAgICAgXG4gIHJzcV9yYXMgPC0gbGlzdCgpXG4gIGZvcihqIGluIHNlcV9hbG9uZyhyZXNvbHV0aW9ucykpe1xuICAgIHJzcV9yZXMgPC0gbGlzdCgpXG4gICAgZm9yKGkgaW4gMTozNjUpe1xuICAgICAgZGFpbHlfdGVtcHMgPC0gdGVtcGVyYXR1cmVzICU+JSAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICMgZmlsdGVyIGJ5IGRheVxuICAgICAgICBmaWx0ZXIoYXNfZGF0ZShkYXRlX3RpbWUpID09IChhcy5EYXRlKCcyMDEyLTAxLTAxJykgKyBkYXlzKGkpKSkgJT4lICMgam9pbiByYXN0ZXIgY29sdW1uc1xuICAgICAgICBpbm5lcl9qb2luKHN0YXRpb25zLCBieSA9IFwic3RhdGlvbmlkXCIpXG4gICAgICBcbiAgICAgIGYgPC0gYXMuZm9ybXVsYShzdHJfYyhcInRlbXBfbWVhbiB+XCIsbmFtZXMocmFzdGVyW1trXV0pLHJlc29sdXRpb25zW1tqXV0pKSAgICAgIyBzZXQgZm9ybXVsYVxuICAgICAgXG4gICAgICBsbV9tb2RlbCA8LSBsbShmLCBkYXRhID0gZGFpbHlfdGVtcHMpXG4gICAgICByc3FfcmVzW1tpXV0gPC0gc3VtbWFyeShsbV9tb2RlbCkkci5zcVxuICAgIH1cbiAgICByc3FfcmFzW1tqXV0gPC0gcnNxX3Jlc1xuICB9XG4gIHJzcVtrXSA8LSByc3FfcmFzXG59XG5gYGAifQ== -->
-<pre class="r"><code>rsq &lt;- list()                    
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuXG5yc3EgPC0gbGlzdCgpICAgICAgICAgICAgICAgICAgICBcbmZvcihrIGluIDE6MSl7ICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcbiAgcnNxX3JhcyA8LSBsaXN0KClcbiAgZm9yKGogaW4gc2VxX2Fsb25nKHJlc29sdXRpb25zKSl7XG4gICAgcnNxX3JlcyA8LSBsaXN0KClcbiAgICBmb3IoaSBpbiAxOjM2NSl7XG4gICAgICBkYWlseV90ZW1wcyA8LSB0ZW1wZXJhdHVyZXMgJT4lICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIyBmaWx0ZXIgYnkgZGF5XG4gICAgICAgIGZpbHRlcihhc19kYXRlKGRhdGVfdGltZSkgPT0gKGFzLkRhdGUoJzIwMTItMDEtMDEnKSArIGRheXMoaSkpKSAlPiUgIyBqb2luIHJhc3RlciBjb2x1bW5zXG4gICAgICAgIGlubmVyX2pvaW4oc3RhdGlvbnMsIGJ5ID0gXCJzdGF0aW9uaWRcIilcbiAgICAgIFxuICAgICAgZiA8LSBhcy5mb3JtdWxhKHN0cl9jKFwidGVtcF9tZWFuIH5cIixuYW1lcyhyYXN0ZXJbW2tdXSkscmVzb2x1dGlvbnNbW2pdXSkpICAgICAjIHNldCBmb3JtdWxhXG4gICAgICBcbiAgICAgIGxtX21vZGVsIDwtIGxtKGYsIGRhdGEgPSBkYWlseV90ZW1wcylcbiAgICAgIHJzcV9yZXNbW2ldXSA8LSBzdW1tYXJ5KGxtX21vZGVsKSRyLnNxXG4gICAgfVxuICAgIHJzcV9yYXNbW2pdXSA8LSByc3FfcmVzXG4gIH1cbiAgcnNxW2tdIDwtIHJzcV9yYXNcbn1cblxuXG5gYGAifQ== -->
+<pre class="r"><code>
+rsq &lt;- list()                    
 for(k in 1:1){                             
   rsq_ras &lt;- list()
   for(j in seq_along(resolutions)){
@@ -346,11 +347,9 @@ for(k in 1:1){
     rsq_ras[[j]] &lt;- rsq_res
   }
   rsq[k] &lt;- rsq_ras
-}</code></pre>
+}
+</code></pre>
 <!-- rnb-source-end -->
-<!-- rnb-output-begin eyJkYXRhIjoibnVtYmVyIG9mIGl0ZW1zIHRvIHJlcGxhY2UgaXMgbm90IGEgbXVsdGlwbGUgb2YgcmVwbGFjZW1lbnQgbGVuZ3RoXG4ifQ== -->
-<pre><code>number of items to replace is not a multiple of replacement length</code></pre>
-<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->

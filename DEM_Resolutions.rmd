@@ -1,0 +1,136 @@
+---
+title: "How does changing the resolution of the DEM affect modelling mean tempeature with elevation?"
+output: html_notebook
+---
+
+
+```{r}
+# Load libraries...
+library(dplyr)
+library(readr)
+library(raster)
+library(lubridate)
+library(reshape)
+library(ggplot2)
+```
+
+
+```{r}
+# Import temperatures and stations as tibbles
+temperatures <- read_csv("daily_ws.csv")
+stations     <- read_csv("stations.csv")
+
+# Subset to only include necessary columns
+temperatures <- temperatures %>% 
+  dplyr::select(stationid, temp_mean, date_time) %>%
+  filter(year(date_time) == 2012)
+stations     <- dplyr::select(stations, stationid, EASTING, NORTHING)
+
+# Import DEM
+raster_names <- c("dem","asp","ptoc")
+rasters <- list()
+for(i in seq_along(raster_names)){
+  rasters[[i]] <- raster(str_c("D:\\R\\TemperatureModelling\\Rasters\\",raster_names[[i]],".tif"))
+}
+
+```
+
+
+
+```{r}
+coordinates(stations) = ~ EASTING + NORTHING  # coerce to SpatialPointsDataFrame
+rasterOptions(timer = TRUE)
+for(raster in rasters){
+  par(mfrow = c(2,3))
+  resolutions <- c(20, 400, 1000)                                       # resolutions to resample DEM
+  for(i in seq_along(resolutions)){
+    template_tmp <- raster(ext = extent(rasters[[1]]),                  # make a template to resample to
+                           resolution = resolutions[[i]])
+    resample_tmp <- resample(raster, template_tmp, method = "bilinear") # resample
+    stations$ext <- extract(resample_tmp,                               # extract DEM values to stations
+                            stations) 
+    
+    names(stations)[names(stations) == "ext"] <- str_c(names(raster), resolutions[[i]]) @
+    
+    
+    plot(resample_tmp, main = str_c(names(raster)," at ",resolutions[[i]]," m resolution"))
+    points(stations)
+  }
+}
+
+
+stations <- as_data_frame(stations)                                     # coerce back to tibble
+head(stations)                                                          # print head of tibble
+
+```
+
+
+```{r}
+
+rsq <- list()                    
+for(k in 1:1){                             
+  rsq_ras <- list()
+  for(j in seq_along(resolutions)){
+    rsq_res <- list()
+    for(i in 1:365){
+      daily_temps <- temperatures %>%                                       # filter by day
+        filter(as_date(date_time) == (as.Date('2012-01-01') + days(i))) %>% # join raster columns
+        inner_join(stations, by = "stationid")
+      
+      f <- as.formula(str_c("temp_mean ~",names(raster[[k]]),resolutions[[j]]))     # set formula
+      
+      lm_model <- lm(f, data = daily_temps)
+      rsq_res[[i]] <- summary(lm_model)$r.sq
+    }
+    rsq_ras[[j]] <- rsq_res
+  }
+  rsq[k] <- rsq_ras
+}
+
+
+```
+
+
+
+
+```{r}
+# Make a dataframe for all the adjusted r-square values
+days <- seq(1:length(rsq[[1]]))
+for(k in seq_along(rasters)){
+rsq_df <- do.call(rbind, Map(data.frame, day = days,
+                             ras20m = rsq[[k]][[1]],
+                             ras200m = rsq[[k]][[2]],
+                             ras400m = rsq[[k]][[3]],
+                             ras700m = rsq[[k]][[4]],
+                             ras00m = rsq[[k]][[5]]))
+names(rsq_df) <- c("Day",
+                        str_c(names(rasters[[k]]), "20m"),
+                        str_c(names(rasters[[k]]), "200m"),
+                        str_c(names(rasters[[k]]), "400m"),
+                        str_c(names(rasters[[k]]), "700m"),
+                        str_c(names(rasters[[k]]), "1000m"))
+mrsq_df[[k]] <- melt(rsq_df, id = "Day")
+}
+
+
+```
+
+
+Lastly, I will plot the adjusted r-squared values, and compare how resolution of the DEM effects modelling temperature with elevation.
+```{r}
+ggplot(data = mrsq_df[[1]], mapping = aes(x = Day, y = value, colour = variable)) +
+  geom_smooth(se = FALSE) +
+  xlab('Day of the year (2012)') +
+  ylab('Adjusted R-Squared') 
+
+ggplot(data = mrsq_df[[2]], mapping = aes(x = Day, y = value, colour = variable)) +
+  geom_smooth(se = FALSE) +
+  xlab('Day of the year (2012)') +
+  ylab('Adjusted R-Squared')
+
+ggplot(data = mrsq_df[[3]], mapping = aes(x = Day, y = value, colour = variable)) +
+  geom_smooth(se = FALSE) +
+  xlab('Day of the year (2012)') +
+  ylab('Adjusted R-Squared')
+  
+
