@@ -1,0 +1,115 @@
+---
+title: "How does changing the resolution of the en affect modelling mean tempeature with elevation?"
+output: html_notebook
+---
+
+In this R Markdown Notebook, I'm going to model the en, at different resolutions, with mean temperatures from weather stations. The original en is at a 20m resolution, and will be resampled up to 200m, 400m, 700m, and 1000m. 
+
+
+```{r}
+# Load libraries...
+library(dplyr)
+library(readr)
+library(raster)
+library(lubridate)
+library(reshape)
+library(ggplot2)
+library(stringr)
+```
+
+
+The files I need to bring into the R environment are two CSVs (as tibbles) and the en raster. One CSV holds the coordinates of the 76 different weather stations, and one holds the daily mean temperature at each stations for everyday in 2012. 
+```{r}
+# Import temperatures and stations as tibbles
+temperatures <- read_csv("daily_ws.csv")
+stations     <- read_csv("stations.csv")
+
+# Subset to only include necessary columns
+temperatures <- temperatures %>% 
+  dplyr::select(stationid, temp_mean, date_time) %>%
+  filter(year(date_time) == 2012)
+stations     <- dplyr::select(stations, stationid, EASTING, NORTHING)
+
+# Import en
+en <- raster("D:\\R\\TemperatureModelling\\Rasters\\en.tif")
+```
+
+For each spatial resolution of en, I want a column for values in the stations table. For right now, I don't actually need the resampled ens. So I will resample them, extract the values at the stations, and rewrite them for each resolution. I'll plot the en at each resolution with the station points so we can see what the look like. 
+
+
+```{r}
+coordinates(stations) = ~ EASTING + NORTHING  # coerce to SpatialPointsDataFrame
+
+par(mfrow = c(2,3))
+resolutions <- c(20,200, 400, 700, 1000)      # resolutions to resample en
+for(i in seq_along(resolutions)){
+  template_tmp <- raster(ext = extent(en),   # make a template to resample to
+                         resolution = resolutions[[i]])
+  resample_tmp <- resample(en, template_tmp) # resample
+  stations$ext <- extract(resample_tmp,       # extract en values to station points
+                          stations) 
+  
+  names(stations)[names(stations) == "ext"] <- str_c("en", resolutions[[i]])
+  
+  
+  plot(resample_tmp, main = str_c("en at ",resolutions[[i]]," m resolution"))
+  points(stations)
+}
+stations <- as_data_frame(stations)            # coerce back to tibble
+head(stations)                                 # print head of tibble
+
+```
+
+
+Now I'm going to generate a model (en vs. temperature) for each day, for each the different en resolutions. I'll make a list of lists of adjusted R-squares, where the outer level is the resolution, and the inner level is day.
+```{r}
+rsq <- list()
+for(j in seq_along(resolutions)){
+  rsq_tmp <- list()
+  for(i in 1:365){
+    date.now <- (as_date('2012-01-01') + days(i))
+    daily_temps <- temperatures %>%
+      filter(as_date(date_time) == date.now) %>%
+      inner_join(stations, by = "stationid")
+    
+    f <- str_c("temp_mean ~","s(en",resolutions[[j]],")")
+    
+    gam_model <- gam(as.formula(f), data = daily_temps)
+    rsq_tmp[[i]] <- summary(gam_model)$s.pv
+  }
+  rsq[[j]] <- rsq_tmp
+}
+
+
+```
+
+
+I'll make the list of lists into a dataframe, so I can easily plot with ggplot2. I'm also going to "melt" the dataframe, which makes it easy to plot all the values at once and make a legend.
+
+```{r}
+# Make a dataframe for all the adjusted r-square values
+days <- seq(1:length(rsq[[1]]))
+rsq_df <- do.call(rbind, Map(data.frame, day = days,
+                             en20m = rsq[[1]],
+                             en200m = rsq[[2]],
+                             en400m = rsq[[3]],
+                             en700m = rsq[[4]],
+                             en1000m = rsq[[5]]))
+head(rsq_df)  # print the head of the dataframe
+
+# Melt the dataframe into two columns 
+mrsq_df <- melt(rsq_df, id = "day")
+head(mrsq_df) # print the head of the melted dataframe
+```
+
+
+Lastly, I will plot the adjusted r-squared values, and compare how resolution of the en effects modelling temperature with elevation.
+```{r}
+ggplot(data = mrsq_df, mapping = aes(x = day, y = value, colour = variable)) +
+  geom_smooth(se = FALSE) +
+  xlab('Day of the year (2012)') +
+  ylab('p-value') 
+  
+```
+
+
