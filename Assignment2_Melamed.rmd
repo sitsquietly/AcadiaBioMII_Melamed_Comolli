@@ -173,15 +173,18 @@ pval.summary <- as.data.frame(
   )
 colnames(pval.summary) <- c("sd.err","pval_prop")
 
+# for sd.err == 1, use values from previous chunk
+pval.summary$sd.err[[1]] <- 1
+pval.summary$pval_prop[[1]] <- pval_prop
 
-for(i in 1:length(sd.err)){
+for(i in 2:length(sd.err)){
   sd.err.subset <- estimates.3 %>%
     filter(sd.err == sd.err[[i]])
-  pval.summary$error[[i]] <- sd.err[[i]]
+  pval.summary$sd.err[[i]] <- sd.err[[i]]
   pval.summary$pval_prop[[i]] <- GetProportionPvalBelowAlpha(sd.err.subset$p.value, 0.05)
 }
 
-ggplot(data = pval.summary, mapping = aes(x = error, y = pval_prop)) +
+ggplot(data = pval.summary, mapping = aes(x = sd.err, y = pval_prop)) +
   geom_point() 
 ```
 
