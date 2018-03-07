@@ -1,0 +1,105 @@
+---
+title: "Assignment 2 - Linear Model Basics"
+author: "Dana Melamed"
+date: "March 6, 2018"
+output: html_document
+---
+
+Load required packages and set seed to pseudo-random, for reproducible results:
+```{r}
+require(tidyverse)
+set.seed = 12321
+```
+
+####  Question 1
+Q : Develop a function that will generate, for a range of each of ‘magnitude of B1’, ‘sample size’ and ‘error’, a measure of the quality of the parameter estimate. (Hint, that measure of quality is the t-value – the estimate scaled by the standard error of the estimate).
+
+The function "gen.mod", given with the assignment, will be embedded into the solution.
+```{r}
+gen.mod <- function(n = 100, b0 =2, b1 = 3, sd.err =1){
+  # Function: generate predictors and responses for given linear model parameters
+  # Args: linear model parameters n, b0, b1, sd.err
+  # Returns: dataframe of predictors and corresponding responses
+  predictor <- runif(n) - 0.5
+  response <- b0 + b1 * predictor + rnorm(n, mean = 0, sd = sd.err)
+  return(data.frame(response = response, predictor = predictor))
+}
+```
+
+
+
+
+To solve this problem, I am going to modify the given script to accept lists *and* single values of n, b1, b0,and sd.err. Then I am going to extract the t-value. Later in the assignment, the p-value needs to be extracted. This function was modified later to also extract the p-values.
+```{r}
+MakeParameterMatrix <- function(n = 100, b0 = 2, b1 = 3, sd.err = 1){
+  # Function: Collect summary stats for combinations of parameters
+  # Args: single element or list for each paramater: n, b0, b1, sd.err
+  # Returns: a dataframe of all combinations of parameters plus t and p-values
+  
+  # Make empty matrix
+  df <- matrix(ncol = 5, nrow =  (length(n)*
+                                       length(b0)*
+                                       length(b1)*
+                                       length(sd.err)), NA)
+  df <- as.data.frame(df)
+  names(df) <- c("n","b0","b1","sd.err","t.value")
+  
+  # Iterate through combinations of paramters and store t and p values
+  row = 1
+  for(i in 1:length(n)){
+    for(j in 1:length(b1)){
+        for(l in 1:length(sd.err)){
+          m1 <- lm(response ~ predictor , 
+                   data = gen.mod(n[[i]], b1[[j]], b0, sd.err[[l]]))
+          
+         df$n[[row]] <- n[[i]]
+         df$b1[[row]] <- b1[[j]]
+         df$b0[[row]] <- b0
+         df$sd.err[[row]] <- sd.err[[l]]
+         df$t.value[[row]] <- summary(m1)[[4]][[6]]
+         df$p.value[[row]] <- summary(m1)$coefficients[,4][[2]]
+         row = row + 1
+        }
+      }
+    }
+  
+  return(df)
+}
+```
+
+
+#### Question 2
+Q: Use that function to produce a data frame, with various combinations of each of the three variables as ‘factors’ and the quality of the estimate as the response.
+
+I am going to set lists of n, b1, and sd.err, and run the function MakeParameterMatrix.
+```{r}
+# Set range of parameters
+n <- seq(100,1000,300)
+b0 <- 0
+b1<- seq(1,5)
+sd.err<- seq(1,3)
+
+# Run function to get dataframe
+estimates <- MakeParameterMatrix(n, b0, b1, sd.err)
+head(estimates)
+```
+
+
+#### Question 2
+Q: Show the results visually.
+
+
+```{r}
+estimates$n <- as.character(estimates$n)
+estimates$sd.err <- as.character(estimates$sd.err)
+ggplot(data = estimates,mapping = aes(x = b1, y = t.value, size = sd.err, fill = sd.err)) +
+  geom_hline(yintercept = 1.96) +
+  geom_hline(yintercept = -1.96) +
+  geom_jitter(shape = 21) + 
+  geom_smooth(size = 1, mapping = aes(colour = sd.err))+
+  ylab("t-Value") +
+  xlab("Predictor (b1)") +
+  facet_wrap(~n, labeller = label_bquote(Sample~~Size~~ .(n)))
+```
+
+
