@@ -81,3 +81,9 @@ ggplot(data = estimates.2,mapping = aes(x = b1, y = t.value, size = sd.err, fill
   xlab("Predictor (b1)") +
   facet_wrap(~n, labeller = label_bquote(Sample~~Size~~ .(n)))
 
+# Question 4a
+# for a given n and sd.err what does distribution of p-values look like?
+n <- 1000
+sd.err  <- 3
+estimates.3 <- MakeParameterMatrix()
+
