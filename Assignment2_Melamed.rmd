@@ -7,12 +7,15 @@ output: html_document
 
 Load required packages and set seed to pseudo-random, for reproducible results:
 ```{r}
-require(tidyverse)
+library(ggplot2)
+library(dplyr)
+
+
 set.seed = 12321
 ```
 
 ####  Question 1
-Q : Develop a function that will generate, for a range of each of ‘magnitude of B1’, ‘sample size’ and ‘error’, a measure of the quality of the parameter estimate. (Hint, that measure of quality is the t-value – the estimate scaled by the standard error of the estimate).
+Q1: Develop a function that will generate, for a range of each of ‘magnitude of B1’, ‘sample size’ and ‘error’, a measure of the quality of the parameter estimate. (Hint, that measure of quality is the t-value – the estimate scaled by the standard error of the estimate).
 
 The function "gen.mod", given with the assignment, will be embedded into the solution.
 ```{r}
@@ -69,7 +72,7 @@ MakeParameterMatrix <- function(n = 100, b0 = 2, b1 = 3, sd.err = 1){
 
 
 #### Question 2
-Q: Use that function to produce a data frame, with various combinations of each of the three variables as ‘factors’ and the quality of the estimate as the response.
+Q2: Use that function to produce a data frame, with various combinations of each of the three variables as ‘factors’ and the quality of the estimate as the response.
 
 I am going to set lists of n, b1, and sd.err, and run the function MakeParameterMatrix.
 ```{r}
@@ -85,9 +88,10 @@ head(estimates)
 ```
 
 
-#### Question 2
-Q: Show the results visually.
+#### Question 3
+Q3: Show the results visually.
 
+With the following code, I've attempted to show the effect of n, b1 and sd.err on t-value. I've facetted the data by n, plotted b1 on the x-axis, plotted t-value as the response on the y-axis, and symbolized the point by size and colour to show the sd.err. To help with the visualization, I've connected points from sd.err groups for each n. 
 
 ```{r}
 estimates$n <- as.character(estimates$n)
@@ -95,11 +99,89 @@ estimates$sd.err <- as.character(estimates$sd.err)
 ggplot(data = estimates,mapping = aes(x = b1, y = t.value, size = sd.err, fill = sd.err)) +
   geom_hline(yintercept = 1.96) +
   geom_hline(yintercept = -1.96) +
-  geom_jitter(shape = 21) + 
-  geom_smooth(size = 1, mapping = aes(colour = sd.err))+
+  geom_point(shape = 21) + 
+  geom_line(size = 1, mapping = aes(colour = sd.err))+
   ylab("t-Value") +
   xlab("Predictor (b1)") +
   facet_wrap(~n, labeller = label_bquote(Sample~~Size~~ .(n)))
 ```
 
+#### Question 4
+Q4: Do the same thing as above, but use a single parameter estimate of B1 = 0 (e.g. no effect). (Set B0 = 0). Use a sample size of 100. Instead of using the ‘t’ value as your ‘quality’ estimate, have the function output the ‘p-value’
+
+
+```{r}
+n <- 100 # set sample size to 100
+b0 <- 0  # set intercept to 0
+b1 <- 0  # no effect
+sd.err <- seq(1,5)
+
+estimates.2 <- MakeParameterMatrix(n, b0, b1, sd.err)
+estimates.2$n <- as.character(estimates.2$n)
+estimates.2$sd.err <- as.character(estimates.2$sd.err)
+
+ggplot(data = estimates.2,mapping = aes(x = b1, y = p.value, size = sd.err, fill = sd.err)) +
+  geom_point(shape = 21) + 
+  ylab("p-Value") +
+  xlab("Predictor (b1)") +
+  facet_wrap(~n, labeller = label_bquote(Sample~~Size~~ .(n)))
+```
+
+Q4a: For a given sample size and error, what does the distribution of p-values look like?
+
+```{r}
+n <- 25
+sd.err  <- 1
+b1 <- seq(1,10)
+estimates.3 <- MakeParameterMatrix(n = n, sd.err = sd.err, b1 = b1)
+
+ggplot(data = estimates.3, mapping = aes(p.value)) +
+  geom_density() +
+  facet_wrap(~n, labeller = label_bquote(Sample~~Size~~ .(n))) 
+```
+
+
+Q4b : What proportion of p-values are <= 0.05?
+
+To answer this question, I am first going to make a function that takes a list of p-values, a value of alpha, and computes the proportion of pvalues that are equal to or below that alpha.
+```{r}
+GetProportionPvalBelowAlpha <- function(p.values, alpha){
+  tot_p <- as.numeric(length(p.values))
+  alpha_p <- as.numeric(length(which(p.values <= alpha)))
+  pval_prop <- alpha_p/tot_p
+  return(pval_prop)
+}
+```
+
+Now I can apply the function to the pvalues made in Q4a.
+```{r}
+pval_prop <- GetProportionPvalBelowAlpha(estimates.3$p.value, 0.05)
+print(paste("Proportion of p-values below 0.05: ",pval_prop))
+```
+
+Q4c: How does that change when the amount of error changes.
+
+To explore this question, I run model the function I made for calculating proportion of pvalue below an alpha, but for several different values of sd.err. Then I plotted the different proportion of pvalues <= 0 for each sd.err.
+```{r}
+
+sd.err  <- seq(1,5) # make range of sd.err
+
+estimates.3 <- MakeParameterMatrix(n = n, sd.err = sd.err, b1 = b1) 
+
+pval.summary <- as.data.frame(
+  matrix(ncol = 2, nrow = length(sd.err))
+  )
+colnames(pval.summary) <- c("sd.err","pval_prop")
+
+
+for(i in 1:length(sd.err)){
+  sd.err.subset <- estimates.3 %>%
+    filter(sd.err == sd.err[[i]])
+  pval.summary$error[[i]] <- sd.err[[i]]
+  pval.summary$pval_prop[[i]] <- GetProportionPvalBelowAlpha(sd.err.subset$p.value, 0.05)
+}
+
+ggplot(data = pval.summary, mapping = aes(x = error, y = pval_prop)) +
+  geom_point() 
+```
 
