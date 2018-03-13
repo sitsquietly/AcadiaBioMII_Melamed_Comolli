@@ -34,38 +34,38 @@ gen.mod <- function(n = 100, b0 =2, b1 = 3, sd.err =1){
 
 To solve this problem, I am going to modify the given script to accept lists *and* single values of n, b1, b0,and sd.err. Then I am going to extract the t-value. Later in the assignment, the p-value needs to be extracted. This function was modified later to also extract the p-values.
 ```{r}
-MakeParameterMatrix <- function(n = 100, b0 = 2, b1 = 3, sd.err = 1){
-  # Function: Collect summary stats for combinations of parameters
-  # Args: single element or list for each paramater: n, b0, b1, sd.err
-  # Returns: a dataframe of all combinations of parameters plus t and p-values
-  
-  # Make empty matrix
-  df <- matrix(ncol = 5, nrow =  (length(n)*
-                                       length(b0)*
-                                       length(b1)*
-                                       length(sd.err)), NA)
+MakeParameterMatrix <- function(n_list, b0_list, b1_list, sd.err_list, rep){
+  # Can use expand.grid instead of all this!
+  # get coefficient for each predictor
+  df <- matrix(ncol = 6, nrow =  (length(n_list)*
+                                    length(b0_list)*
+                                    length(b1_list)*
+                                    length(sd.err_list)*
+                                    rep))
   df <- as.data.frame(df)
-  names(df) <- c("n","b0","b1","sd.err","t.value")
+  names(df) <- c("n","b0","b1","sd.err","t.value","pvalue")
   
-  # Iterate through combinations of paramters and store t and p values
   row = 1
-  for(i in 1:length(n)){
-    for(j in 1:length(b1)){
-        for(l in 1:length(sd.err)){
-          m1 <- lm(response ~ predictor , 
-                   data = gen.mod(n[[i]], b1[[j]], b0, sd.err[[l]]))
-          
-         df$n[[row]] <- n[[i]]
-         df$b1[[row]] <- b1[[j]]
-         df$b0[[row]] <- b0
-         df$sd.err[[row]] <- sd.err[[l]]
-         df$t.value[[row]] <- summary(m1)[[4]][[6]]
-         df$p.value[[row]] <- summary(m1)$coefficients[,4][[2]]
-         row = row + 1
+  for (m in 1:rep){
+    for(i in 1:length(n_list)){
+      for(j in 1:length(b1_list)){
+        for(k in 1:length(b0_list)){
+          for(l in 1:length(sd.err_list)){
+            m1 <- lm(response ~ predictor , 
+                     data = gen.mod(n_list[[i]], b1_list[[j]], b0_list[[k]], sd.err_list[[l]]))
+            
+            df$n[[row]] <- n_list[[i]]
+            df$b1[[row]] <- b1_list[[j]]
+            df$b0[[row]] <- b0_list[[k]]
+            df$sd.err[[row]] <- sd.err_list[[l]]
+            df$t.value[[row]] <- summary(m1)[[4]][[6]]
+            df$p.value[[row]] <- summary(m1)$coefficients[,4][[2]]
+            row = row + 1
+          }
         }
       }
     }
-  
+  }
   return(df)
 }
 ```
@@ -76,33 +76,30 @@ Q2: Use that function to produce a data frame, with various combinations of each
 
 I am going to set lists of n, b1, and sd.err, and run the function MakeParameterMatrix.
 ```{r}
-# Set range of parameters
+# Set parameters
 n <- seq(100,1000,300)
-b0 <- 0
-b1<- seq(1,5)
-sd.err<- seq(1,3)
+b0 <- 2
+b1 <- seq(1,20,5)
+sd.err <- seq(1,3)
+rep <- 1000
 
-# Run function to get dataframe
-estimates <- MakeParameterMatrix(n, b0, b1, sd.err)
-head(estimates)
+# Make dataframe
+testdf_1 <- MakeParameterMatrix(n,b0,b1,sd.err, rep)
+# Show sample
+head(testdf_1)
+
 ```
 
 
 #### Question 3
 Q3: Show the results visually.
 
-With the following code, I've attempted to show the effect of n, b1 and sd.err on t-value. I've facetted the data by n, plotted b1 on the x-axis, plotted t-value as the response on the y-axis, and symbolized the point by size and colour to show the sd.err. To help with the visualization, I've connected points from sd.err groups for each n. 
+
 
 ```{r}
-estimates$n <- as.character(estimates$n)
-estimates$sd.err <- as.character(estimates$sd.err)
-ggplot(data = estimates,mapping = aes(x = b1, y = t.value, size = sd.err, fill = sd.err)) +
-  geom_hline(yintercept = 1.96) +
-  geom_hline(yintercept = -1.96) +
-  geom_point(shape = 21) + 
-  geom_line(size = 1, mapping = aes(colour = sd.err))+
-  ylab("t-Value") +
-  xlab("Predictor (b1)") +
+testdf_1$b1 <- as.character(testdf_1$b1)
+p <- ggplot(data = testdf_1, aes(t.value, group = b1, colour = b1))
+p + geom_density() +
   facet_wrap(~n, labeller = label_bquote(Sample~~Size~~ .(n)))
 ```
 
@@ -111,33 +108,18 @@ Q4: Do the same thing as above, but use a single parameter estimate of B1 = 0 (e
 
 
 ```{r}
-n <- 100 # set sample size to 100
-b0 <- 0  # set intercept to 0
-b1 <- 0  # no effect
-sd.err <- seq(1,5)
 
-estimates.2 <- MakeParameterMatrix(n, b0, b1, sd.err)
-estimates.2$n <- as.character(estimates.2$n)
-estimates.2$sd.err <- as.character(estimates.2$sd.err)
+n <- 100
+b0 <- 0
+b1 <- 1
+sd.err <- seq(1,3)
+rep <- 1000
 
-ggplot(data = estimates.2,mapping = aes(x = b1, y = p.value, size = sd.err, fill = sd.err)) +
-  geom_point(shape = 21) + 
-  ylab("p-Value") +
-  xlab("Predictor (b1)") +
-  facet_wrap(~n, labeller = label_bquote(Sample~~Size~~ .(n)))
-```
+testdf_2 <- MakeParameterMatrix(n, b0, b1, sd.err, rep)
 
-Q4a: For a given sample size and error, what does the distribution of p-values look like?
-
-```{r}
-n <- 25
-sd.err  <- 1
-b1 <- seq(1,10)
-estimates.3 <- MakeParameterMatrix(n = n, sd.err = sd.err, b1 = b1)
-
-ggplot(data = estimates.3, mapping = aes(p.value)) +
-  geom_density() +
-  facet_wrap(~n, labeller = label_bquote(Sample~~Size~~ .(n))) 
+testdf_2$b1 <- as.character(testdf_2$b1)
+p <- ggplot(data = testdf_2, aes(p.value, group = b1, colour = b1))
+p + geom_density()
 ```
 
 
@@ -153,38 +135,37 @@ GetProportionPvalBelowAlpha <- function(p.values, alpha){
 }
 ```
 
+the pval prop <= 0.05 should be 0.05
+
+
 Now I can apply the function to the pvalues made in Q4a.
 ```{r}
-pval_prop <- GetProportionPvalBelowAlpha(estimates.3$p.value, 0.05)
+pval_prop <- GetProportionPvalBelowAlpha(testdf_2$p.value, 0.05)
 print(paste("Proportion of p-values below 0.05: ",pval_prop))
 ```
+
 
 Q4c: How does that change when the amount of error changes.
 
 To explore this question, I run model the function I made for calculating proportion of pvalue below an alpha, but for several different values of sd.err. Then I plotted the different proportion of pvalues <= 0 for each sd.err.
 ```{r}
-
 sd.err  <- seq(1,5) # make range of sd.err
 
-estimates.3 <- MakeParameterMatrix(n = n, sd.err = sd.err, b1 = b1) 
+testdf_3 <- MakeParameterMatrix(n, b0, b1, sd.err, rep) 
 
 pval.summary <- as.data.frame(
   matrix(ncol = 2, nrow = length(sd.err))
-  )
+)
 colnames(pval.summary) <- c("sd.err","pval_prop")
 
-# for sd.err == 1, use values from previous chunk
-pval.summary$sd.err[[1]] <- 1
-pval.summary$pval_prop[[1]] <- pval_prop
 
-for(i in 2:length(sd.err)){
-  sd.err.subset <- estimates.3 %>%
+for(i in 1:length(sd.err)){
+  sd.err.subset <- testdf_3 %>%
     filter(sd.err == sd.err[[i]])
   pval.summary$sd.err[[i]] <- sd.err[[i]]
   pval.summary$pval_prop[[i]] <- GetProportionPvalBelowAlpha(sd.err.subset$p.value, 0.05)
 }
 
-ggplot(data = pval.summary, mapping = aes(x = sd.err, y = pval_prop)) +
-  geom_point() 
+print(pval.summary)
 ```
 
