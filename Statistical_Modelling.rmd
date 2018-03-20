@@ -1,0 +1,60 @@
+---
+title: "Modelling Temperature by Elevation From Different Resolution DEM's"
+author: "Dana Melamed & Perry Comolli"
+date: "March 19, 2018"
+output: html_document
+---
+```{r}
+library(readr)
+library(modelr)
+library(lubridate)
+library(dplyr)
+library(reshape2)
+```
+
+
+We know that elevation and temperature are related, but...
+While temperature is captured at a point location, elevation is often taken from a raster of elevations, called a digital elevation model (DEM). The spatial resolution of the DEM determines the elevation at the cell overlapping with a weather station point.
+
+I have a table of daily temperatures (min, max and mean) recorded at weather stations, and the corresponding elevation at different resolution dems. (Scroll over)
+
+```{r}
+df <- read_rds("C:\\MScAG\\AcadiaBioMII_Melamed_Comolli\\elevation_test.rds")
+head(df)
+```
+
+The table includes every day from 2011 - 2017. For now, that will be reduced to just a single week. Lets choose a week in August
+
+```{r}
+df <- df %>%
+  filter(year(date_time) == 2012,
+         week(date_time) == 31,
+         stationid %in% c("BR5","KE3","SH1","MI2","S20","BR2"))
+```
+
+
+For modelling, I am going to melt the table so that elevation is a single column, and another column describes which resolution DEM the elevation is from. The melted columns need to be renamed from the defaults.
+
+```{r}
+df <- melt(df, id = c("stationid","EASTING","NORTHING","date_time",
+                                "temp_mean","temp_max","temp_min"))
+
+df <- df %>%
+  dplyr::rename(elev = value, dem = variable)
+head(df)
+```
+
+
+Now, a model can be made ...elevation is multipled by the type of DEM
+```{r}
+m1 <- glm(temp_max ~ elev*dem, data = df, family = gaussian)
+
+par(mfrow = c(2,2))
+plot(m1)
+```
+
+And the summary...
+```{r}
+summary(m1)
+```
+
