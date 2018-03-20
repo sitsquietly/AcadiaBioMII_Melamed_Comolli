@@ -173,7 +173,7 @@ head(df)</code></pre>
 <p>For modelling, I am going to melt the table so that elevation is a single column, and another column describes which resolution DEM the elevation is from. The melted columns need to be renamed from the defaults.</p>
 <pre class="r"><code>df &lt;- melt(df, id = c(&quot;stationid&quot;,&quot;EASTING&quot;,&quot;NORTHING&quot;,&quot;date_time&quot;,
                                 &quot;temp_mean&quot;,&quot;temp_max&quot;,&quot;temp_min&quot;))
-
+#rename columns
 df &lt;- df %&gt;%
   dplyr::rename(elev = value, dem = variable)
 head(df)</code></pre>

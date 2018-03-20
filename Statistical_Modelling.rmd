@@ -14,7 +14,7 @@ library(reshape2)
 
 
 We know that elevation and temperature are related, but...
-While temperature is captured at a point location, elevation is often taken from a raster of elevations, called a digital elevation model (DEM). The spatial resolution of the DEM determines the elevation at the cell overlapping with a weather station point.
+While temperature is captured at a point location, elevation is often taken from a raster of elevations, called a digital elevation model (DEM). The spatial resolution of the DEM determines the elevation at the cell overlapping with a weather station point. 
 
 I have a table of daily temperatures (min, max and mean) recorded at weather stations, and the corresponding elevation at different resolution dems. (Scroll over)
 
@@ -38,7 +38,7 @@ For modelling, I am going to melt the table so that elevation is a single column
 ```{r}
 df <- melt(df, id = c("stationid","EASTING","NORTHING","date_time",
                                 "temp_mean","temp_max","temp_min"))
-
+#rename columns
 df <- df %>%
   dplyr::rename(elev = value, dem = variable)
 head(df)
